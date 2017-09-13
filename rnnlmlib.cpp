@@ -13,6 +13,8 @@
 #include <math.h>
 #include <time.h>
 #include <cfloat>
+#include <iostream>
+#include <vector>
 #include "fastexp.h"
 #include "rnnlmlib.h"
 
@@ -1801,6 +1803,89 @@ void CRnnLM::testNet()
     fclose(flog);
 }
 
+double CRnnLM::getLogP(const std::vector<int> &input){
+  //std::vector<int> input {36, 15, 10, 0};
+  int a, word, last_word, wordcn;
+
+  //TODO(yzhdong): enable LM interpolate
+  FILE *lmprob=NULL;
+  lambda=1;
+  use_lmprob=0;
+  float prob_other;
+
+  real log_other; //?
+  real log_combine; //?
+  real senp;
+  int nbest_cn=0;
+  
+  restoreNet();
+  computeNet(0, 0);
+  copyHiddenLayerToInput();
+  saveContext();
+  saveContext2();
+
+  for (a=0; a<MAX_NGRAM_ORDER; a++) history[a]=0;
+
+  last_word=0;		//last word = end of sentence
+  logp=0;
+  log_other=0;
+  prob_other=0;
+  log_combine=0;
+  wordcn=0;
+  senp=0;
+
+  for (size_t i = 0; i < input.size(); ++i) {
+    word = input[i];
+
+    //TODO(yzhdong): test use_lmprob
+    if (use_lmprob) {
+      fscanf(lmprob, "%f", &prob_other);
+      goToDelimiter('\n', lmprob);
+    }
+    
+    computeNet(last_word, word);
+    if (word!=-1) {
+      neu2[word].ac*=neu2[vocab[word].class_index+vocab_size].ac;
+    }
+      
+    if (word!=-1) {
+      logp+=log10(neu2[word].ac);
+      log_other+=log10(prob_other);
+      log_combine+=log10(neu2[word].ac*lambda + prob_other*(1-lambda));
+      senp+=log10(neu2[word].ac*lambda + prob_other*(1-lambda));
+      wordcn++;
+    } else {
+      real oov_penalty=-5;	//log penalty
+      
+      if (prob_other!=0) {
+        logp+=log10(prob_other);
+        log_other+=log10(prob_other);
+        log_combine+=log10(prob_other);
+        senp+=log10(prob_other);
+      } else {
+        logp+=oov_penalty;
+        log_other+=oov_penalty;
+        log_combine+=oov_penalty;
+        senp+=oov_penalty;
+      }
+      wordcn++;
+    }
+    copyHiddenLayerToInput();
+    
+    if (last_word!=-1) neu0[last_word].ac=0;  //delete previous activation
+    if (word == 0) {
+      if (independent && (word==0)) netReset();
+      break;
+    }  
+    last_word=word;
+    
+    for (a=MAX_NGRAM_ORDER-1; a>0; a--) history[a]=history[a-1];
+    history[0]=last_word;
+  }
+  if (use_lmprob) fclose(lmprob);
+  return senp;
+}
+
 void CRnnLM::testNbest()
 {
     int a, word, last_word, wordcn;
@@ -1860,6 +1945,7 @@ void CRnnLM::testNbest()
     
 	
 	word=readWordIndex(fi);     //read next word
+        std::cout <<"Checking: " << word << std::endl;
 	if (lambda>0) computeNet(last_word, word);      //compute probability distribution
         if (feof(fi)) break;        //end of file: report LOGP, PPL
         

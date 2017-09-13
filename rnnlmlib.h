@@ -340,7 +340,7 @@ public:
     void testNet();
     void testNbest();
     void testGen();
-    
+    double getLogP(const std::vector<int> &word_ids); //word_ids should end with 0
     void matrixXvector(struct neuron *dest, struct neuron *srcvec, struct synapse *srcmatrix, int matrix_width, int from, int to, int from2, int to2, int type);
 };
 

@@ -1,6 +1,6 @@
-CC = x86_64-linux-g++-4.6
+CC = g++
 WEIGHTTYPE = float
-CFLAGS = -D WEIGHTTYPE=$(WEIGHTTYPE) -lm -O2 -Wall -funroll-loops -ffast-math
+CFLAGS = -D WEIGHTTYPE=$(WEIGHTTYPE) -lm -O2 -Wall -funroll-loops -ffast-math -std=c++11 -w
 #CFLAGS = -lm -O2 -Wall
 
 all: rnnlmlib.o rnnlm

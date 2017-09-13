@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits.h>
+#include <vector>
 #include "rnnlmlib.h"
 
 using namespace std;
@@ -694,9 +695,14 @@ int main(int argc, char **argv)
         model1.useLMProb(use_lmprob);
         if (use_lmprob) model1.setLMProbFile(lmprob_file);
         model1.setDebugMode(debug_mode);
-
 	if (nbest==0) model1.testNet();
-	else model1.testNbest();
+	else //model1.testNbest();
+        {
+          std::vector<int> input1 {36, 10, 0}; // -5.7419
+          std::vector<int> input2 {36, 15, 10, 0}; // -8.3248
+          std::vector<int> input3 {36, -1, 10, 0}; // -11.589045
+          std::cout << "Final: " << model1.getLogP(input3) << std::endl;
+        }
     }
     
     if (gen>0) {
