@@ -1,3 +1,20 @@
+README
+======
+
+Add interface to take a sentence string vector as input, give the logp of that sentence as output. Running examples are in rnnlm.cpp.
+
+```
+make clean && make
+./rnnlm -rnnlm model -test nbest.txt -nbest
+```
+
+nbest.txt are not used here, input are hardcoded in rnnlm.cpp, will change it later.
+
+
+
+
+Original readme
+---------------
 from http://www.rnnlm.org/
 
 # RNNLM Toolkit
