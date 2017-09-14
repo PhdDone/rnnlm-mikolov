@@ -310,9 +310,9 @@ public:
     void setOneIter(int newOneIter) {one_iter=newOneIter;}
     void setMaxIter(int newMaxIter) {maxIter=newMaxIter;}
     
-    int getWordHash(char *word);
+    int getWordHash(const char *word);
     void readWord(char *word, FILE *fin);
-    int searchVocab(char *word);
+    int searchVocab(const char *word);
     int readWordIndex(FILE *fin);
     int addWordToVocab(char *word);
     void learnVocabFromTrainFile();		//train_file will be used to construct vocabulary
@@ -341,7 +341,9 @@ public:
     void testNbest();
     void testGen();
     double getLogP(const std::vector<int> &word_ids); //word_ids should end with 0
+    double computeSentLogP(std::vector<std::string> words);
     void matrixXvector(struct neuron *dest, struct neuron *srcvec, struct synapse *srcmatrix, int matrix_width, int from, int to, int from2, int to2, int type);
+    void init();
 };
 
 #endif

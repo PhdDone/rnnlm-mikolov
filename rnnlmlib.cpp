@@ -88,7 +88,7 @@ void CRnnLM::readWord(char *word, FILE *fin)
     word[a]=0;
 }
 
-int CRnnLM::getWordHash(char *word)
+int CRnnLM::getWordHash(const char *word)
 {
     unsigned int hash, a;
     
@@ -99,7 +99,7 @@ int CRnnLM::getWordHash(char *word)
     return hash;
 }
 
-int CRnnLM::searchVocab(char *word)
+int CRnnLM::searchVocab(const char *word)
 {
     int a;
     unsigned int hash;
@@ -307,7 +307,9 @@ void CRnnLM::saveContext()		//useful for n-best list processing
 {
     int a;
     
-    for (a=0; a<layer1_size; a++) neu1b[a].ac=neu1[a].ac;
+    for (a=0; a<layer1_size; a++) {
+      neu1b[a].ac=neu1[a].ac;
+    }
 }
 
 void CRnnLM::restoreContext()
@@ -1803,35 +1805,55 @@ void CRnnLM::testNet()
     fclose(flog);
 }
 
+double CRnnLM::computeSentLogP(std::vector<std::string> words) {
+  std::vector<int> word_ids;
+  for (std::string word : words) {
+    if (word.size() > MAX_STRING) { // truncate string
+      word.resize(MAX_STRING);
+    }
+    word_ids.push_back(searchVocab(word.c_str()));
+  }
+  word_ids.push_back(0); // end of sent
+  //for (int id : word_ids) {
+  //  std::cout << id << std::endl;
+  //}
+  return getLogP(word_ids);
+}
+
+void CRnnLM::init() { //call once
+  restoreNet();
+  computeNet(0, 0);
+  saveContext();
+  saveContext2();
+}
+
 double CRnnLM::getLogP(const std::vector<int> &input){
-  //std::vector<int> input {36, 15, 10, 0};
-  int a, word, last_word, wordcn;
+  int a, word, last_word;
 
   //TODO(yzhdong): enable LM interpolate
   FILE *lmprob=NULL;
   lambda=1;
   use_lmprob=0;
   float prob_other;
+  real log_other;
+  real log_combine;
 
-  real log_other; //?
-  real log_combine; //?
   real senp;
-  int nbest_cn=0;
-  
-  restoreNet();
-  computeNet(0, 0);
+
+  restoreContext();
+  restoreContext2();
+
   copyHiddenLayerToInput();
-  saveContext();
-  saveContext2();
-
-  for (a=0; a<MAX_NGRAM_ORDER; a++) history[a]=0;
-
+  
+  for (a=0; a<MAX_NGRAM_ORDER; a++) {
+    history[a]=0;
+  }
+  
   last_word=0;		//last word = end of sentence
   logp=0;
   log_other=0;
   prob_other=0;
   log_combine=0;
-  wordcn=0;
   senp=0;
 
   for (size_t i = 0; i < input.size(); ++i) {
@@ -1853,7 +1875,6 @@ double CRnnLM::getLogP(const std::vector<int> &input){
       log_other+=log10(prob_other);
       log_combine+=log10(neu2[word].ac*lambda + prob_other*(1-lambda));
       senp+=log10(neu2[word].ac*lambda + prob_other*(1-lambda));
-      wordcn++;
     } else {
       real oov_penalty=-5;	//log penalty
       
@@ -1868,13 +1889,12 @@ double CRnnLM::getLogP(const std::vector<int> &input){
         log_combine+=oov_penalty;
         senp+=oov_penalty;
       }
-      wordcn++;
     }
     copyHiddenLayerToInput();
     
     if (last_word!=-1) neu0[last_word].ac=0;  //delete previous activation
-    if (word == 0) {
-      if (independent && (word==0)) netReset();
+    if (independent && word == 0) {
+      netReset();
       break;
     }  
     last_word=word;

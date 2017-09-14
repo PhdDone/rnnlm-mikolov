@@ -698,10 +698,16 @@ int main(int argc, char **argv)
 	if (nbest==0) model1.testNet();
 	else //model1.testNbest();
         {
+          model1.init();
           std::vector<int> input1 {36, 10, 0}; // -5.7419
           std::vector<int> input2 {36, 15, 10, 0}; // -8.3248
           std::vector<int> input3 {36, -1, 10, 0}; // -11.589045
-          std::cout << "Final: " << model1.getLogP(input3) << std::endl;
+          //std::vector<int> input3 {0};
+          std::cout << "LogP: " << model1.getLogP(input3) << std::endl;
+          std::cout << "LogP: " << model1.getLogP(input3) << std::endl;
+
+          std::vector<std::string> input4 {"WE", "DONT", "KNOW"};
+          std::cout << "LogP: " << model1.computeSentLogP(input4) << std::endl;
         }
     }
     
